@@ -1,0 +1,272 @@
+---
+title: "University Enrollment Lead Scoring Model"
+author: "Mark Brandes"
+date: "February 14, 2017"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+##The Opportunity
+
+My client is a university system whose number one goal is getting qualified students enrolled in one of their university locations.  In order to increase the number of enrollments the University is planning on investing in a lead generation marketing campaign.  Some of the previous lead generation campaigns were so successful that they ended up not my the resources required to follow up on all the leads.
+
+The solution I am proposing is to create a lead scoring model that would give each lead a certain probability of enrolling.  Using this information they will then be able to prioritize which leads they follow up with first.  This is will help them keeps costs and staffing in place while lowering the chance they miss out on a great candidate.
+
+An added benefit of this model will be the ability to learn which of their marketing channel brings in the most leads with a high probability of enrolling.
+
+
+##Adding needed libraries
+
+We'll get started by adding the libraries that will be needed to create this model.
+
+```{r libraries, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(readr)
+library(caTools)
+library(ROCR)
+library(lubridate)
+```
+
+
+##The Data
+
+Now that the libraries are in we can go about importing the data.
+
+```{r importing the data, message=FALSE}
+original <- read_csv("Prospectdata.csv")
+allrecords <- original
+str(allrecords)
+```
+
+From the structure of the data, this first thing you notice is that every field was imported as a character string.  Clearly that is not going to work for creating our model so we will need to clean up the data.
+
+We will start by looking at each of the variables individually in order to determine its value to the dataset.
+
+* CreatedOn - The date when the record was created in the database
+    + Need to change this into the proper date format
+* Location - Which location the person is interested in attending
+    + This variables has too many values so we will engineer new feature that will be more helpful to the model
+* Inquiry Date- The date when the person placed an inquiry
+    + This date in and of itself will not help but creating a binary value for whether or not the person placed an inquiry may help.
+* Inquiry Source - This will tell us if the inquiry was done online, offline, in person, on a website, etc.
+    +  Need to change this field into a factor
+* Prospect Status - This is an internal tracking field showing where the person is in the enrollment funnel
+    + Not helpful to the model so this will be removed
+* Prospect Date - The date that the most recent prospect status was set.
+    + Not helpful to the model so this will be removed
+* Application Status - This is the current status of the person's application.
+    + Not helpful to the model so this will be removed
+* Application Started Date - Date the application was started
+    + Everyone interested in enrolling must fill out an application so I don't believe a binary variable will help here.  However, using this field along with the Application Submitted Date may give us a useful time period value that we can use
+* Application Completed Date - Date the application was completed
+    + Intermediary step between started and submitted that is not consistently filled in.  Will be removed from the dataset.
+* Application Submitted Date - Date the application was submitted
+    + Will be used with the Started Date to determine a time period between
+* Application Moved to ERP Date - Date the application was moved to ERP
+    + Seems to be rarely used.  Will be removed form the dataset
+* Admit Date - Date the person was admitted to school
+    + Everyone needs to be admitted in order to be enrolled so this will not help the model
+* Enrolled Date - Date when the person was enrolled in classes
+    + Dependent variable for our model
+* Academic Level of Interest - The variable contains the same value of "Graduate" for all observations
+    + This variable will be deleted
+* Academic Program of Interest - This is the program the person is interested in
+    + Helpful variable but there are too many values for a factor so some feature engineering will need to take place
+* Anticipated Entry Term - The term when the person is interested in enrolling
+    + This field will not be helpful to our model so it will be removed 
+* Marketing Campaign - This is the campaign used to access the website if they submitted their records online
+    + Need to clean up some values, replace the N/A's with (not set), and then change into a factor
+* Marketing Medium - This is the medium used to access the website if they submitted their records online
+    + Need to clean up some values, replace the N/A's with (not set), and then change into a factor
+* Marketing Source - This is the source used to access the website if they submitted their records online
+    + This field has too many values with no obvious way of grouping them.  It could be helpful to create a new binary variable from this as to whether or not the record has a source
+
+##Cleaning the data
+
+Now that we have created a plan for our data, we will start the cleaning process by removing the variables that will not be helpful to our model or analysis.
+
+```{r Deleting unused columns, message=FALSE}
+allrecords <- allrecords %>% 
+  select(-ProspectStatus) %>%
+  select(-ProspectDate) %>%
+  select(-ApplicationStatus) %>%
+  select(-ApplicationCompletedDate) %>%
+  select(-ApplicationMovedtoERPDate) %>%
+  select(-AdmitDate) %>%
+  select(-AcademicLevelofInterest) %>%
+  select(-AnticipatedEntryTerm)
+
+```
+
+Next we need to replace the NA values in our independent variables to something useful.  For InquirySource, Location, MarketingMedium, and MarketingCampaign, I choose the value of "not set" to replace the NA values.  Two of those fields use the value of "none" for some records so I wanted to use something other than that.
+
+For academicProgramofInterest I decided to use "Undecided" as my NA replacement value.  My reasoning was that since the prospects did not pick a program they could be assumed to be undecided about there program choice.  This is a value that was already used in the data for other sources so it also kept consistency.
+
+Two other changes I made were to the MarketingMedium variable.  There were a couple values that should have been labeled something else so I fixed those.
+
+```{r Cleaning data, message=FALSE}
+allrecords <- allrecords %>% 
+  replace_na(list(InquirySource = "not set")) %>%
+  replace_na(list(Location = "not set")) %>%
+  replace_na(list(academicProgramofInterest = "Undecided")) %>%
+  replace_na(list(MarketingMedium = "not set")) %>%
+  replace_na(list(MarketingCampaign = "not set"))
+
+allrecords$MarketingCampaign <- gsub("%20"," ", allrecords$MarketingCampaign)
+allrecords$MarketingCampaign <- gsub("(not set)","not set", allrecords$MarketingCampaign, fixed = TRUE)
+allrecords$MarketingMedium <- gsub("%20"," ", allrecords$MarketingMedium)
+allrecords$MarketingMedium <- gsub("(not set)","not set", allrecords$MarketingMedium, fixed = TRUE)
+allrecords$MarketingMedium <- gsub("FacebookAd","PaidSocial", allrecords$MarketingMedium)
+allrecords$MarketingMedium <- gsub("OnlineMarketing","PaidDisplay", allrecords$MarketingMedium)
+
+```
+
+At this point the last thing to do was to change the formatting of the variables.  I changed all the dates to the mm/dd/yyyy format.  I also changed InquirySource, MarketingCampaign, and Marketing Medium to factors.
+
+```{r Changing some variable formats, message=FALSE}
+
+allrecords$CreatedOn <- as.Date(allrecords$CreatedOn, format="%m/%d/%Y")
+allrecords$InquiryDate <- as.Date(allrecords$InquiryDate, format="%m/%d/%Y")
+allrecords$ApplicationStartedDate <- as.Date(allrecords$ApplicationStartedDate, format="%m/%d/%Y")
+allrecords$ApplicationSubmittedDate <- as.Date(allrecords$ApplicationSubmittedDate, format="%m/%d/%Y")
+allrecords$EnrolledDate <- as.Date(allrecords$EnrolledDate, format="%m/%d/%Y")
+
+
+allrecords$InquirySource <- as.factor(allrecords$InquirySource)
+allrecords$MarketingCampaign <- as.factor(allrecords$MarketingCampaign)
+allrecords$MarketingMedium <- as.factor(allrecords$MarketingMedium)
+
+```
+
+
+##Feature Engineering
+
+I had mentioned previously when looking at the individual variables that we would need to do some feature engineering.  Now that the data is clean we will start that process.  The first thing I will do is read in the reference files for grouping Location and academicProgramofInterest.  These files were created using domain knowledge from the client.
+
+```{r reading in translation files, message=FALSE}
+progref <- read_csv("ProgramGroupReference.csv")
+locref <- read_csv("LocationReference.csv")
+```
+
+###New Variables
+
+This first step I will take is creating three new binary variables that will either have a value of 1 or 0.
+
+The most important new variable is "enrolled"" which will have a value of 1 if the EnrolledDate field has a date and a value of 0 if there is no enrolled date.  This variable will serve as the dependent variable for our model.
+
+The next variable I will create is called "inquired which will be similar to how I created enrolled.  If there is an InquiryDate then it gets a value of 1 and if there is no date it gets a value of 0.  The idea here is that the actual date of the inquiry doesn't seem to hold much value, but the fact that they did or did not inquire before they applied may have some.
+
+The third variable I will create is for MarketingSource.  MarketingSource has far too many values to be of use in our model.  However, as with InquiryDate, there may still be value in whether or not this record has a source.  So this variable will be called "HasSource" and will have a value of 0 if the MarketingSource is "NA" and a value of 1 if not.
+
+The final step for these three new variables will be to set their format to factor.
+
+```{r Feature Engineering New Variables, message=FALSE}
+
+allrecords <- allrecords %>%
+  mutate(enrolled=if_else(is.na(allrecords$EnrolledDate),0,1)) %>%
+  mutate(inquired=if_else(is.na(allrecords$InquiryDate),0,1)) %>%
+  mutate(HasSource=if_else(is.na(allrecords$MarketingSource),0,1))
+
+allrecords$enrolled <- as.factor(allrecords$enrolled)
+allrecords$inquired <- as.factor(allrecords$inquired)
+allrecords$HasSource <- as.factor(allrecords$HasSource)
+```
+
+###Grouping Location and AcademicProgramofInterest
+
+My next step in feature engineering will using the translation file we added to join in smaller groupings on those values.  As mentioned earlier these files were made with domain knowledge from the client.
+
+The join with the ProgramReference file will add a "Group" variable to the dataset.  This group variable will turn out to be a factor with 9 levels which will be much more helpful than our character values in AcademicProgramofInterest.
+
+The join with the LocationReference file will add "Metro", "Region", "Characteristic", and "Characteristic2" variables to our dataset.  The "Metro" variable will group the locations by their placement in a specific Metro in the country.  The "Region" variable will group those regions even more broadly.  The Characteristic variables use a different type of grouping based on the characteristics of those location instead of their geography.
+
+Once again we turn all these variables into factors.
+
+```{r Feature Engineering Adding Location and Program Groups}
+allrecords <- left_join(allrecords,progref,by="academicProgramofInterest")
+allrecords <- left_join(allrecords,locref,by="Location")
+
+allrecords$Group <- as.factor(allrecords$Group)
+
+allrecords$Metro <- as.factor(allrecords$Metro)
+allrecords$Region <- as.factor(allrecords$Region)
+allrecords$Characteristic <- as.factor(allrecords$Characteristic)
+allrecords$Characteristic2 <- as.factor(allrecords$Characteristic2)
+
+str(allrecords)
+```
+
+
+```{r creating submitted subset, message=FALSE}
+
+submitted <- allrecords %>% filter(!is.na(ApplicationSubmittedDate))
+submitted <- mutate(submitted,appsubmitdays=difftime(CreatedOn,ApplicationSubmittedDate,units="days"))
+submitted <- filter(submitted, appsubmitdays >= 0)
+```
+
+##Creating the Model
+
+Now that our data is cleaning and feature engineering is completed we can being to create our model.  In this case I decided to use a logistic regression model since my independent variable is binary.  I also like the fact that my output from the model will be the probability that a person will enroll which is exactly what I want to base my leading scoring on.
+
+First we are going to take a look at a table of our dependent variable to get a feel for what our baseline model would be.
+
+```{r dependent variable}
+table(allrecords$enrolled)
+
+15473/(15473+2507)
+```
+So it looks like if we had our model always choose "not enrolled" then we would have an 86% accuracy rate.  This is the number we are hoping our model will beat.
+
+Now we are going to break up our dataset into a training set and testing set.
+
+```{r creating the model, message=FALSE}
+set.seed(9)
+split <- sample.split(allrecords$enrolled,SplitRatio = 0.75)
+allrecTrainSet <- subset(allrecords, split==TRUE)
+allrecTestSet <- subset(allrecords, split==FALSE)
+
+```
+
+We are going to use the training set in the glm function to make our model.
+
+```{r}
+allrecLogModel <- glm(enrolled ~ InquirySource + inquired + MarketingCampaign + MarketingMedium + HasSource + Group + Metro + Region + Characteristic + Characteristic2, data = allrecTrainSet, family = binomial)
+summary(allrecLogModel)
+
+```
+
+Now that our model is made we want to look at some statistics on the predictions its making.  We will also look at the average probility for each of our dependent variable outcomes.
+
+```{r Predictions, message=FALSE}
+predictallrecTrain <- predict(allrecLogModel, type = "response")
+summary(predictallrecTrain)
+tapply(predictallrecTrain, allrecTrainSet$enrolled, mean)
+```
+
+So we are getting a much higher average probibility for enrolled which is a good sign.  Now let's look at our confusion matrix from these predicted values.  We are going to start by using a threshold value of 0.5.
+
+```{r}
+table(allrecTrainSet$enrolled,predictallrecTrain >0.5)
+
+(11275+795)/(11275+795+1085+330)
+```
+
+So our accuracy rate with a threshold of 0.5 is 89.5% which is already better than our baseline model.  Now let's see if we can improve it by picking an optimized threshold value.  We will do this by looking at the ROC curve.
+
+##ROC curve and AUC
+```{r creating the roc curve for choosing cutoff}
+
+ROCRpred = prediction(predictallrecTrain, allrecTrainSet$enrolled)
+ROCRperf = performance(ROCRpred, "tpr","fpr")
+plot(ROCRperf, colorize=TRUE, print.cutoffs.at=seq(0,1,0.1), text.adj=c(-0.2,1.7))
+auc.tmp <- performance(ROCRpred,"auc"); auc <- as.numeric(auc.tmp@y.values)
+auc.tmp
+```
+
