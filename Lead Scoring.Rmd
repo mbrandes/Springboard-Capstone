@@ -1,10 +1,11 @@
 ---
 title: "University Enrollment Lead Scoring Model"
 author: "Mark Brandes"
-date: "February 14, 2017"
+date: "March 3, 2017"
 output:
-  word_document: default
+  html_document: default
   pdf_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -14,12 +15,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ##The Opportunity
 
-My client is a university system whose number one goal is getting qualified students enrolled in one of their university locations.  In order to increase the number of enrollments the University is planning on investing in a lead generation marketing campaign.  Some of the previous lead generation campaigns were so successful that they ended up not my the resources required to follow up on all the leads.
+My client is a university system whose number one goal is getting qualified students enrolled in one of their university locations.  In order to increase the number of enrollments, the university is planning on investing in a lead generation marketing campaign.  However, some of the previous lead generation campaigns were so successful that they ended up not having the resources required to follow up on all the leads.
 
-The solution I am proposing is to create a lead scoring model that would give each lead a certain probability of enrolling.  Using this information they will then be able to prioritize which leads they follow up with first.  This is will help them keeps costs and staffing in place while lowering the chance they miss out on a great candidate.
+The solution I am proposing is to create a lead scoring model that would give each lead a certain probability of enrolling.  Using this information, they will be able to prioritize which leads they follow up with first.  This is will help them keeps costs and staffing in place while lowering the chance they miss out on a great candidate.
 
 An added benefit of this model will be the ability to learn which of their marketing channel brings in the most leads with a high probability of enrolling.
 
+**********
 
 ##Adding needed libraries
 
@@ -29,13 +31,17 @@ We'll get started by adding the libraries that will be needed to create this mod
 library(dplyr)
 library(tidyr)
 library(readr)
+library(ggplot2)
 library(caTools)
 library(ROCR)
+library(rpart)
+library(rpart.plot)
 library(lubridate)
 ```
 
+**********
 
-##The Data
+##Importing The Data and Examining the Structure
 
 Now that the libraries are in we can go about importing the data.
 
@@ -44,6 +50,10 @@ original <- read_csv("Prospectdata.csv")
 allrecords <- original
 str(allrecords)
 ```
+
+**********
+
+##Explanation of Variables
 
 From the structure of the data, this first thing you notice is that every field was imported as a character string.  Clearly that is not going to work for creating our model so we will need to clean up the data.
 
@@ -88,9 +98,13 @@ We will start by looking at each of the variables individually in order to deter
 * Marketing Source - This is the source used to access the website if they submitted their records online
     + This field has too many values with no obvious way of grouping them.  It could be helpful to create a new binary variable from this as to whether or not the record has a source
 
-##Cleaning the data
+**********
+
+##Cleaning the Data
+###Deleting Specific Columns
 
 Now that we have created a plan for our data, we will start the cleaning process by removing the variables that will not be helpful to our model or analysis.
+
 
 ```{r Deleting unused columns, message=FALSE}
 allrecords <- allrecords %>% 
@@ -105,9 +119,11 @@ allrecords <- allrecords %>%
 
 ```
 
-Next we need to replace the NA values in our independent variables to something useful.  For InquirySource, Location, MarketingMedium, and MarketingCampaign, I choose the value of "not set" to replace the NA values.  Two of those fields use the value of "none" for some records so I wanted to use something other than that.
+###Replacing both NA and inaccurate values
 
-For academicProgramofInterest I decided to use "Undecided" as my NA replacement value.  My reasoning was that since the prospects did not pick a program they could be assumed to be undecided about there program choice.  This is a value that was already used in the data for other sources so it also kept consistency.
+Next we need to replace the NA values in our independent variables with something more useful.  For InquirySource, Location, MarketingMedium, and MarketingCampaign, I choose the value of "not set" to replace the NA values.  Two of those variables use the value of "none" for some observations so I wanted to use something other than that so those stay identifiable.
+
+For academicProgramofInterest I decided to use "Undecided" as my NA replacement value.  My reasoning was that since the prospects did not pick a program they could be assumed to be undecided about their program choice.  This is a value that was already used in the data for other sources so it also kept consistency.
 
 Two other changes I made were to the MarketingMedium variable.  There were a couple values that should have been labeled something else so I fixed those.
 
@@ -125,8 +141,11 @@ allrecords$MarketingMedium <- gsub("%20"," ", allrecords$MarketingMedium)
 allrecords$MarketingMedium <- gsub("(not set)","not set", allrecords$MarketingMedium, fixed = TRUE)
 allrecords$MarketingMedium <- gsub("FacebookAd","PaidSocial", allrecords$MarketingMedium)
 allrecords$MarketingMedium <- gsub("OnlineMarketing","PaidDisplay", allrecords$MarketingMedium)
+allrecords$InquirySource <- gsub("Web Create Account - Default Create Account Form","Web Create Account Default", allrecords$InquirySource)
 
 ```
+
+###Adjusting the Varbiable Formats
 
 At this point the last thing to do was to change the formatting of the variables.  I changed all the dates to the mm/dd/yyyy format.  I also changed InquirySource, MarketingCampaign, and Marketing Medium to factors.
 
@@ -145,8 +164,10 @@ allrecords$MarketingMedium <- as.factor(allrecords$MarketingMedium)
 
 ```
 
+**********
 
 ##Feature Engineering
+###Importing Reference Files
 
 I had mentioned previously when looking at the individual variables that we would need to do some feature engineering.  Now that the data is clean we will start that process.  The first thing I will do is read in the reference files for grouping Location and academicProgramofInterest.  These files were created using domain knowledge from the client.
 
@@ -185,7 +206,7 @@ My next step in feature engineering will using the translation file we added to 
 
 The join with the ProgramReference file will add a "Group" variable to the dataset.  This group variable will turn out to be a factor with 9 levels which will be much more helpful than our character values in AcademicProgramofInterest.
 
-The join with the LocationReference file will add "Metro", "Region", "Characteristic", and "Characteristic2" variables to our dataset.  The "Metro" variable will group the locations by their placement in a specific Metro in the country.  The "Region" variable will group those regions even more broadly.  The Characteristic variables use a different type of grouping based on the characteristics of those location instead of their geography.
+The join with the LocationReference file will add "Metro", "Region", and "Characteristic" variables to our dataset.  The "Metro" variable will group the locations by their placement in a specific Metro in the country.  The "Region" variable will group those regions even more broadly.  The Characteristic variable uses a different type of grouping based on the characteristics of those locations instead of their geography.
 
 Once again we turn all these variables into factors.
 
@@ -198,22 +219,61 @@ allrecords$Group <- as.factor(allrecords$Group)
 allrecords$Metro <- as.factor(allrecords$Metro)
 allrecords$Region <- as.factor(allrecords$Region)
 allrecords$Characteristic <- as.factor(allrecords$Characteristic)
-allrecords$Characteristic2 <- as.factor(allrecords$Characteristic2)
 
+
+```
+###Revisiting the Data Structure
+
+Now that our data is cleaned and we've completed the feature engineering, let's take another look at the data structure.
+
+```{r revisiting the data structure}
 str(allrecords)
 ```
 
+**********
 
-```{r creating submitted subset, message=FALSE}
+##Checking the Data Representation
+
+###Inquiry Source Variable
+The new structure of the data looks good but I also want to check some of the representation of each variable.  I'll start by looking at the InquirySource variable.
+
+```{r graphing Inquiry Source Variable}
+ggplot(data = allrecords) + geom_bar(aes(x=InquirySource), fill="gold1") + theme_classic() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+```
+
+We have three values that dominate most of the observations so this may end up needing some adjustment.  Based on the collection method I am fairly confident in these data points.
+
+###Marketing Medium Variable
+
+```{r graphing Marketing Medium Variable}
+ggplot(data = allrecords) + geom_bar(aes(x=MarketingMedium), fill="deepskyblue3") + theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+This graph makes me question the data collection methods we used to acquire this data.  I'm going to keep it out of the model and recommend that the client revisit how this data is being collected.   Also knowing that Marketing Source and Marketing Campaign are tied to Marketing Medium, I will make the same recommendation for those.
+
+###Characteristic Variable
+
+```{r graphing Characteristic}
+
+ggplot(data = allrecords) + geom_bar(aes(x=Characteristic), fill="seagreen") + theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+This data looks to have a very nice distribution and seems to be a fitting replacement for the location variable.
+ 
+```{r creating submitted subset, message=FALSE, include=FALSE}
 
 submitted <- allrecords %>% filter(!is.na(ApplicationSubmittedDate))
 submitted <- mutate(submitted,appsubmitdays=difftime(CreatedOn,ApplicationSubmittedDate,units="days"))
 submitted <- filter(submitted, appsubmitdays >= 0)
 ```
 
+**********
+
 ##Creating the Model
 
-Now that our data is cleaning and feature engineering is completed we can being to create our model.  In this case I decided to use a logistic regression model since my independent variable is binary.  I also like the fact that my output from the model will be the probability that a person will enroll which is exactly what I want to base my leading scoring on.
+Now that our data is cleaned and feature engineering is completed we can being to create our model.  In this case I decided to use a logistic regression model since my independent variable is binary.  I also like the fact that my output from the model will be the probability that a person will enroll which is exactly what I want to base my leading scoring on.
 
 First we are going to take a look at a table of our dependent variable to get a feel for what our baseline model would be.
 
@@ -227,8 +287,8 @@ So it looks like if we had our model always choose "not enrolled" then we would 
 Now we are going to break up our dataset into a training set and testing set.
 
 ```{r creating the model, message=FALSE}
-set.seed(9)
-split <- sample.split(allrecords$enrolled,SplitRatio = 0.75)
+set.seed(1234)
+split <- sample.split(allrecords$enrolled,SplitRatio = 0.60)
 allrecTrainSet <- subset(allrecords, split==TRUE)
 allrecTestSet <- subset(allrecords, split==FALSE)
 
@@ -236,13 +296,13 @@ allrecTestSet <- subset(allrecords, split==FALSE)
 
 We are going to use the training set in the glm function to make our model.
 
-```{r}
-allrecLogModel <- glm(enrolled ~ InquirySource + inquired + MarketingCampaign + MarketingMedium + HasSource + Group + Metro + Region + Characteristic + Characteristic2, data = allrecTrainSet, family = binomial)
+```{r running the model function}
+allrecLogModel <- glm(enrolled ~ InquirySource + inquired + HasSource + Group + Metro + Region + Characteristic, data = allrecTrainSet, family = binomial)
 summary(allrecLogModel)
 
 ```
 
-Now that our model is made we want to look at some statistics on the predictions its making.  We will also look at the average probility for each of our dependent variable outcomes.
+Now that our model is made we want to look at some statistics on the predictions its making.  We'll specifically look at the average probability for each of our dependent variable outcomes.
 
 ```{r Predictions, message=FALSE}
 predictallrecTrain <- predict(allrecLogModel, type = "response")
@@ -250,15 +310,38 @@ summary(predictallrecTrain)
 tapply(predictallrecTrain, allrecTrainSet$enrolled, mean)
 ```
 
-So we are getting a much higher average probibility for enrolled which is a good sign.  Now let's look at our confusion matrix from these predicted values.  We are going to start by using a threshold value of 0.5.
+So we are getting a much higher average probability for enrolled which is a good sign.  Now let's take a look at the confusion matrix.
+
+```{r}
+predictallrecTrain <- predict(allrecLogModel, type = "response")
+table(allrecTrainSet$enrolled,predictallrecTrain >0.5)
+```
+```{r}
+(9032+623)/(9032+623+252+881)
+```
+
+Looks like this model gives us an accuracy of 89.5% using the threshold of 0.5 which is better than our baseline model accuracy of 86%.
+
+However, it appears that inquired, HasSource, and Region had no effect on the model so I am run the model again without those variables and see if it changes our accuracy.
+
+##Second Model after Removing Variables
+
+```{r running the model function 2}
+allrecLogModel <- glm(enrolled ~ InquirySource + Group + Metro +Characteristic, data = allrecTrainSet, family = binomial)
+summary(allrecLogModel)
+```
+
+Let's take another look at our confusion matrix from these predicted values.  We will use the same threshold value of 0.5 again.
 
 ```{r}
 table(allrecTrainSet$enrolled,predictallrecTrain >0.5)
 
-(11275+795)/(11275+795+1085+330)
+(9027+629)/(9027+629+257+875)
 ```
 
-So our accuracy rate with a threshold of 0.5 is 89.5% which is already better than our baseline model.  Now let's see if we can improve it by picking an optimized threshold value.  We will do this by looking at the ROC curve.
+So our accuracy rate is a little higher without those variables but stills rounds to 89.5%.  We've improved the simplicity of our model while at the same time slightly improving the accuracy.
+
+Now let's see if we can improve the accuracy by picking an optimized threshold value.  We will do this by looking at the ROC curve.
 
 ##ROC curve and AUC
 ```{r creating the roc curve for choosing cutoff}
@@ -270,3 +353,70 @@ auc.tmp <- performance(ROCRpred,"auc"); auc <- as.numeric(auc.tmp@y.values)
 auc.tmp
 ```
 
+Our area under the curve is .93 so it appears that our model is pretty accurate.  It also looks like Our current threshold of 0.5 seems to be a good choice before the line starts to dip.
+
+That being said, my recommendation at this point for the client would be a trade off between the available resources versus accuracy.  Setting a low threshold would add more error to the model but it would also lower the possibility a candidate is missed.  However, that would also mean chasing more leads that don't pan out.  In the end our model is already eliminating a large chunk of candidates so they may be a plausible option.
+
+For the moment we are going to keep the threshold of 0.5 and see how our model does on the test data.
+
+```{r test set}
+table(allrecTestSet$enrolled)
+
+6189/(6189+1003)
+
+predictallrecTest <- predict(allrecLogModel, newdata = allrecTestSet, type = "response")
+
+table(allrecTestSet$enrolled,predictallrecTest >0.5)
+
+
+
+```
+
+```{r}
+
+(5997+392)/(5997+392+192+611)
+
+```
+
+It appears we have an accuracy of 89% on the test data which is very close to our model accuracy of 89.5%.  All in all I'd say we have a good model.
+
+##Decision Tree
+
+At this point I would like to take a look at a decision tree to see if we can replicate the accuracy of our logistic regression model while gaining a more interpretable model.
+
+```{r decision tree}
+
+allrecTreeModel <- rpart(enrolled ~ InquirySource + Group + Metro +  Characteristic, data = allrecTrainSet, method = "class", control = rpart.control(minbucket = 25))
+prp(allrecTreeModel)
+```
+
+This chart shows us that the most important variables seem to be Inquiry Source and Metro which is similar to what we saw in the logistic model.  However, group and characteristic seems to be missing.  Let's see what the predictions look like against the test set.
+
+```{r}
+
+PredictROC = predict(allrecTreeModel, newdata = allrecTestSet)
+
+ROCRtreepred = prediction(PredictROC[,2], allrecTestSet$enrolled)
+ROCRtreeperf = performance(ROCRtreepred, "tpr","fpr")
+plot(ROCRtreeperf)
+auctree.tmp <- performance(ROCRtreepred,"auc"); auctree <- as.numeric(auc.tmp@y.values)
+auctree
+```
+
+It looks like we get the same value of .93 for area under the curve that we saw in logistic regression.  This is a good sign that we can get the same accuracy out of the decision tree model that we did with the logistic model but we also now have more interpretable results.
+
+##Summary
+
+In summary it appears that we have two working and accurate model for predicting if a person will enroll with the university.
+
+The decision tree model gives us a clear roadmap on how to interpret records on small scale.  However, we also lose insight into how our marketing could be affected by the group and characteristic variable.
+
+My final recommendations would be the following:
+
+* Both models are equally accurate in their predictions, but the value logistic regression model gives in regards to marketing insight outweigh the benefits of having the more interpretable decision tree model.
+
+* It would be in the clients best interest to revisit the data collection methods used for the Marketing Medium, Source, and Campaign fields.  Right now they seem to be inaccurate and were not helpful to the models.
+
+* Identify the amount of resources available for communication with prospects.  Something it terms of number or communications per day would be most helpful.  We could then use that data to optimize our threshold value in effort to limit the possible missed prospects while keeping capacity within available resources.
+
+These models should end up being very valuable to the client moving forward as it will allow them to accurately prioritize communication with prospects while keeping their costs low.  This in turn lets them run their lead generation campaign without fear of bing overwhlemed.  In the end this should have the effect of increasing enrollment for the university.

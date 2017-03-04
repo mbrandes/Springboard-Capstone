@@ -1,76 +1,76 @@
-Location,Metro,Region,Characteristic,Characteristic2
-St. Louis Home Campus,St Louis,Missouri,Home,Home
-BJC Learning Center,St Louis,Missouri,Hospital,Hospital
-SSM Healthcare,Hospital,Missouri,Hospital,Hospital
-Fort Smith Metro,Fort Smith Metro,Arkansas,Metro,Metro
-Little Rock Metro,Little Rock,Arkansas,Metro,Metro
-Irvine Metro,Irvine,California,Metro,Metro
-San Diego Metro,San Diego,California,Metro,Metro
-Colorado Springs Metro,Colorado Springs,Colorado,Metro,Metro
-Denver Metro,Denver,Colorado,Metro,Metro
-Gainesville,Gainesville,Florida,Metro,Metro
-Jacksonville Metro,Jacksonville,Florida,Metro,Metro
-Lakeland Metro,Lakeland,Florida,Metro,Metro
-Melbourne,Melbourne,Florida,Metro,Metro
-Merritt Island Metro,Merritt Island,Florida,Metro,Metro
-Ocala Metro,Ocala,Florida,Metro,Metro
-Orlando Metro,Orlando,Florida,Metro,Metro
-St. Petersburg,St Petersburg,Florida,Metro,Metro
-Gateway - Downtown St. Louis,St Louis,Missouri,Metro,Metro
-Kansas City Metro,Kansas City,Missouri,Metro,Metro
-Rolla Metro,Rolla,Missouri,Metro,Metro
-Westport,St Louis,Missouri,Metro,Metro
-WingHaven,St Louis,Missouri,Metro,Metro
-Fayetteville Metro,Fayetteville,North Carolina,Metro,Metro
-Charleston Metro,Charleston,South Carolina,Metro,Metro
-Columbia Metro,Columbia,South Carolina,Metro,Metro
-Greenville Metro,Greenville,South Carolina,Metro,Metro
-Myrtle Beach Metro,Myrtle Beach,South Carolina,Metro,Metro
-Louisville Metro,Louisville,Tennessee,Metro,Metro
-San Antonio Metro,San Antonio,Texas,Metro,Metro
-Luke AFB,Phoenix,Arizona,Military,AirForce
-Little Rock AFB,Little Rock,Arkansas,Military,AirForce
-Los Angeles AFB,Los Angeles,California,Military,AirForce
-Peterson AFB,Colorado Springs,Colorado,Military,AirForce
-Fort Belvoir,DC,DC,Military,Army
-Joint Base Anacostia-Bolling/Bolling AFB,DC,DC,Military,AirForce
-Joint Base Andrews/Andrews AFB,DC,DC,Military,AirForce
-Camp Lejeune,Jacksonville,Florida,Military,Marines
-Jacksonville Naval Air Station,Jacksonville,Florida,Military,Navy
-Patrick AFB,Melbourne,Florida,Military,AirForce
-Fort Gordon,Augusta,Georgia,Military,Army
-Fort Stewart,Hinesville,Georgia,Military,Army
-Hunter Army Airfield,Savannah,Georgia,Military,Army
-Great Lakes Naval Base,Chicago,Illinois,Military,Navy
-McConnell AFB,Wichita,Kansas,Military,AirForce
-Fort Leavenworth,Kansas City,Missouri,Military,Army
-Fort Leonard Wood,Fort Leonard Wood,Missouri,Military,Army
-Scott AFB,St Louis,Missouri,Military,AirForce
-Fort Bragg,Fayetteville,North Carolina,Military,Army
-Fort Sill,Lawton,Oklahoma,Military,Army
-Tinker AFB,Oklahoma City,Oklahoma,Military,AirForce
-Fort Jackson,Columbia,South Carolina,Military,Army
-Joint Base Charleston/Charleston AFB,Charleston,South Carolina,Military,AirForce
-Shaw AFB,Sumter,South Carolina,Military,AirForce
-Memphis Naval Support Activity,Memphis,Tennessee,Military,Navy
-Fort Bliss,El Paso,Texas,Military,Army
-Joint Base San Antonio/Fort Sam Houston,San Antonio,Texas,Military,Army
-Joint Base San Antonio/Lackland AFB,San Antonio,Texas,Military,AirForce
-Joint Base San Antonio/Randolph AFB,San Antonio,Texas,Military,AirForce
-Hill AFB,Salt Lake City,Utah,Military,AirForce
-Fairchild AFB,Spokane,Washington,Military,AirForce
-"Athens, Greece",Greece,NonUS,NonUS,NonUS
-"Accra, Ghana",Ghana,NonUS,NonUS,NonUS
-"Bangkok, Thailand",Thailand,NonUS,NonUS,NonUS
-"Cha-am/Hua Hin, Thailand",Thailand,NonUS,NonUS,NonUS
-"Chengdu, China",China,NonUS,NonUS,NonUS
-"Geneva, Switzerland",Switzerland,NonUS,NonUS,NonUS
-"Leiden, the Netherlands",Netherlands,NonUS,NonUS,NonUS
-"Shanghai, China",China,NonUS,NonUS,NonUS
-Study Abroad,Study Abroad,NonUS,NonUS,NonUS
-"Vienna, Austria",Austria,NonUS,NonUS,NonUS
-Online,Online,Online,Online,Online
-Southern Maryland Higher Education Center,California,Maryland,School,School
-"Barbara Jordan Elementary, University City School District",St Louis,Missouri,School,School
-Southwestern Illinois College,St Louis,Missouri,School,School
-not set,not set,not set,not set,not set
+Location,Metro,Region,Characteristic
+St. Louis Home Campus,St Louis,Missouri,Home
+BJC Learning Center,St Louis,Missouri,Other
+SSM Healthcare,Hospital,Missouri,Other
+Fort Smith Metro,Fort Smith Metro,Arkansas,Metro
+Little Rock Metro,Little Rock,Arkansas,Metro
+Irvine Metro,Irvine,California,Metro
+San Diego Metro,San Diego,California,Metro
+Colorado Springs Metro,Colorado Springs,Colorado,Metro
+Denver Metro,Denver,Colorado,Metro
+Gainesville,Gainesville,Florida,Metro
+Jacksonville Metro,Jacksonville,Florida,Metro
+Lakeland Metro,Lakeland,Florida,Metro
+Melbourne,Melbourne,Florida,Metro
+Merritt Island Metro,Merritt Island,Florida,Metro
+Ocala Metro,Ocala,Florida,Metro
+Orlando Metro,Orlando,Florida,Metro
+St. Petersburg,St Petersburg,Florida,Metro
+Gateway - Downtown St. Louis,St Louis,Missouri,Metro
+Kansas City Metro,Kansas City,Missouri,Metro
+Rolla Metro,Rolla,Missouri,Metro
+Westport,St Louis,Missouri,Metro
+WingHaven,St Louis,Missouri,Metro
+Fayetteville Metro,Fayetteville,North Carolina,Metro
+Charleston Metro,Charleston,South Carolina,Metro
+Columbia Metro,Columbia,South Carolina,Metro
+Greenville Metro,Greenville,South Carolina,Metro
+Myrtle Beach Metro,Myrtle Beach,South Carolina,Metro
+Louisville Metro,Louisville,Tennessee,Metro
+San Antonio Metro,San Antonio,Texas,Metro
+Luke AFB,Phoenix,Arizona,Military
+Little Rock AFB,Little Rock,Arkansas,Military
+Los Angeles AFB,Los Angeles,California,Military
+Peterson AFB,Colorado Springs,Colorado,Military
+Fort Belvoir,DC,DC,Military
+Joint Base Anacostia-Bolling/Bolling AFB,DC,DC,Military
+Joint Base Andrews/Andrews AFB,DC,DC,Military
+Camp Lejeune,Jacksonville,Florida,Military
+Jacksonville Naval Air Station,Jacksonville,Florida,Military
+Patrick AFB,Melbourne,Florida,Military
+Fort Gordon,Augusta,Georgia,Military
+Fort Stewart,Hinesville,Georgia,Military
+Hunter Army Airfield,Savannah,Georgia,Military
+Great Lakes Naval Base,Chicago,Illinois,Military
+McConnell AFB,Wichita,Kansas,Military
+Fort Leavenworth,Kansas City,Missouri,Military
+Fort Leonard Wood,Fort Leonard Wood,Missouri,Military
+Scott AFB,St Louis,Missouri,Military
+Fort Bragg,Fayetteville,North Carolina,Military
+Fort Sill,Lawton,Oklahoma,Military
+Tinker AFB,Oklahoma City,Oklahoma,Military
+Fort Jackson,Columbia,South Carolina,Military
+Joint Base Charleston/Charleston AFB,Charleston,South Carolina,Military
+Shaw AFB,Sumter,South Carolina,Military
+Memphis Naval Support Activity,Memphis,Tennessee,Military
+Fort Bliss,El Paso,Texas,Military
+Joint Base San Antonio/Fort Sam Houston,San Antonio,Texas,Military
+Joint Base San Antonio/Lackland AFB,San Antonio,Texas,Military
+Joint Base San Antonio/Randolph AFB,San Antonio,Texas,Military
+Hill AFB,Salt Lake City,Utah,Military
+Fairchild AFB,Spokane,Washington,Military
+"Athens, Greece",Greece,NonUS,NonUS
+"Accra, Ghana",Ghana,NonUS,NonUS
+"Bangkok, Thailand",Thailand,NonUS,NonUS
+"Cha-am/Hua Hin, Thailand",Thailand,NonUS,NonUS
+"Chengdu, China",China,NonUS,NonUS
+"Geneva, Switzerland",Switzerland,NonUS,NonUS
+"Leiden, the Netherlands",Netherlands,NonUS,NonUS
+"Shanghai, China",China,NonUS,NonUS
+Study Abroad,Study Abroad,NonUS,NonUS
+"Vienna, Austria",Austria,NonUS,NonUS
+not set,not set,not set,Other
+Online,Online,Online,Online
+Southern Maryland Higher Education Center,California,Maryland,Other
+"Barbara Jordan Elementary, University City School District",St Louis,Missouri,Other
+Southwestern Illinois College,St Louis,Missouri,Other
